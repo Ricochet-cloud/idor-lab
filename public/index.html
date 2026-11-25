@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<title>IDOR Lab - My Account</title>
+<style>
+  body { font-family: sans-serif; max-width: 480px; margin: 60px auto; }
+  input, button { font-size: 16px; padding: 8px; margin: 4px 0; width: 100%; box-sizing: border-box; }
+  button { cursor: pointer; }
+  #result { white-space: pre-wrap; background: #f4f4f4; padding: 12px; margin-top: 16px; border-radius: 6px; }
+  h2 { margin-top: 32px; }
+</style>
+</head>
+<body>
+  <h1>IDOR Lab</h1>
+
+  <h2>1. Login</h2>
+  <input id="username" placeholder="username (try: alice)" value="alice" />
+  <input id="password" placeholder="password" value="alice123" type="password" />
+  <button onclick="login()">Login</button>
+
+  <h2>2. View profile by ID</h2>
+  <input id="userId" placeholder="user id (try: 1, then 2, then 3)" value="1" />
+  <button onclick="getUser()">Get /api/user/:id (vulnerable)</button>
+  <button onclick="getSecureUser()">Get /api/secure/user/:id (fixed)</button>
+
+  <div id="result"></div>
+
+  <script>
+    let token = null;
+
+    async function login() {
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await res.json();
+      if (data.token) token = data.token;
+      document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function getUser() {
+      const id = document.getElementById('userId').value;
+      const res = await fetch('/api/user/' + id, {
+        headers: { Authorization: token || '' },
+      });
+      const data = await res.json();
+      document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function getSecureUser() {
+      const id = document.getElementById('userId').value;
+      const res = await fetch('/api/secure/user/' + id, {
+        headers: { Authorization: token || '' },
+      });
+      const data = await res.json();
+      document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+    }
+  </script>
+</body>
+</html>
